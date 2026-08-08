@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>メルカリ利益計算機</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+    .card { max-width: 460px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    h2 { color: #ff5a5f; margin-top: 0; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; }
+    input, select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+    optgroup { font-weight: bold; color: #333; }
+    .result-box { background: #fff8f0; padding: 15px; border-radius: 6px; border: 1px solid #ffe0c0; margin-top: 15px; }
+    .result-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .total { font-size: 1.2em; font-weight: bold; color: #d9534f; border-top: 1px solid #ddd; padding-top: 5px; margin-top: 5px; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>メルカリ利益計算機</h2>
+
+  <div class="form-group">
+    <label for="price">販売額（円）</label>
+    <input type="number" id="price" placeholder="例: 666" oninput="calculate()">
+  </div>
+
+  <div class="form-group">
+    <label for="shipping">発送方法</label>
+    <select id="shipping" onchange="calculate()">
+      <optgroup label="--- らくらくメルカリ便">
+        <option value="210" selected>ネコポス (210円)</option>
+        <option value="450">宅急便コンパクト (450円)</option>
+        <option value="750">宅急便 60サイズ (750円)</option>
+        <option value="850">宅急便 80サイズ (850円)</option>
+        <option value="1050">宅急便 100サイズ (1,050円)</option>
+        <option value="1200">宅急便 120サイズ (1,200円)</option>
+        <option value="1450">宅急便 140サイズ (1,450円)</option>
+        <option value="1700">宅急便 160サイズ (1,700円)</option>
+        <option value="2100">宅急便 170サイズ (2,100円)</option>
+        <option value="2100">宅急便 180サイズ (2,100円)</option>
+        <option value="2500">宅急便 200サイズ (2,500円)</option>
+      </optgroup>
+
+      <optgroup label="--- ゆうゆうメルカリ便">
+        <option value="160">ゆうパケットポストmini (160円)</option>
+        <option value="215">ゆうパケットポスト (215円)</option>
+        <option value="230">ゆうパケット (230円)</option>
+        <option value="455">ゆうパケットプラス (455円)</option>
+        <option value="750">ゆうパック 60サイズ (750円)</option>
+        <option value="870">ゆうパック 80サイズ (870円)</option>
+        <option value="1070">ゆうパック 100サイズ (1,070円)</option>
+        <option value="1200">ゆうパック 120サイズ (1,200円)</option>
+        <option value="1450">ゆうパック 140サイズ (1,450円)</option>
+        <option value="1700">ゆうパック 160サイズ (1,700円)</option>
+        <option value="1900">ゆうパック 170サイズ (1,900円)</option>
+      </optgroup>
+
+      <optgroup label="--- 郵便レターパック等">
+        <option value="85">ミニレター (85円)</option>
+        <option value="430">レターパックライト (430円)</option>
+        <option value="600">レターパックプラス (600円)</option>
+        <option value="190">ゆうメール 150g (190円)</option>
+        <option value="230">ゆうメール 250g (230円)</option>
+        <option value="320">ゆうメール 500g (320円)</option>
+        <option value="380">ゆうメール 1kg (380円)</option>
+        <option value="210">スマートレター (210円)</option>
+        <option value="185">クリックポスト (185円)</option>
+      </optgroup>
+
+      <optgroup label="--- 規格内郵便">
+        <option value="140">規格内 50g以内 (140円)</option>
+        <option value="180">規格内 100g以内 (180円)</option>
+        <option value="270">規格内 150g以内 (270円)</option>
+        <option value="320">規格内 250g以内 (320円)</option>
+        <option value="510">規格内 500g以内 (510円)</option>
+        <option value="750">規格内 1kg以内 (750円)</option>
+      </optgroup>
+
+      <optgroup label="--- 規格外郵便">
+        <option value="260">規格外 50g以内 (260円)</option>
+        <option value="290">規格外 100g以内 (290円)</option>
+        <option value="390">規格外 150g以内 (390円)</option>
+        <option value="450">規格外 250g以内 (450円)</option>
+        <option value="660">規格外 500g以内 (660円)</option>
+        <option value="920">規格外 1kg以内 (920円)</option>
+        <option value="1350">規格外 2kg以内 (1,350円)</option>
+        <option value="1750">規格外 4kg以内 (1,750円)</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="extra">雑費（梱包材など）</label>
+    <input type="number" id="extra" placeholder="例: 10" oninput="calculate()">
+  </div>
+
+  <div class="result-box">
+    <div class="result-item"><span>販売利益:</span> <span id="profit">0 円</span></div>
+    <div class="result-item"><span>送料:</span> <span id="shippingFee">210 円</span></div>
+    <div class="result-item total"><span>手取り額:</span> <span id="netProfit">0 円</span></div>
+  </div>
+</div>
+
+<script>
+function calculate() {
+  const price = Math.floor(Number(document.getElementById('price').value)) || 0;
+  const shippingFee = Number(document.getElementById('shipping').value) || 0;
+  const extra = Math.floor(Number(document.getElementById('extra').value)) || 0;
+
+  // メルカリ手数料10%（端数切り捨て）
+  const fee = Math.floor(price * 0.1);
+  const profit = price - fee;
+
+  // 手取り額計算
+  const netProfit = profit - shippingFee - extra;
+
+  document.getElementById('profit').textContent = profit.toLocaleString() + ' 円';
+  document.getElementById('shippingFee').textContent = shippingFee.toLocaleString() + ' 円';
+  document.getElementById('netProfit').textContent = (price > 0 ? netProfit.toLocaleString() : 0) + ' 円';
+}
+
+// 初回表示時の送料セット
+calculate();
+</script>
+
+</body>
+</html>
