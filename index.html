@@ -2,36 +2,86 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <!-- スマホ表示の拡大・サイズを最適化する設定 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>メルカリ利益計算機</title>
+  <title>メルカリ計算ツール</title>
   <style>
-    /* 全体の背景と中央寄せ */
+    :root {
+      --primary-color: #ff5a5f;
+      --primary-hover: #ff1744;
+      --bg-color: #f4f5f7;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+      
+      /* ジャンル別カラー */
+      --color-kuroneko: #00a0e9;
+      --color-yucho: #df0000;
+      --color-other: #6c757d;
+      --color-teikei: #2e7d32;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       padding: 16px;
       margin: 0;
-      background: #f4f5f7;
+      background: var(--bg-color);
+      color: var(--text-color);
       display: flex;
       justify-content: center;
       min-height: 100vh;
       box-sizing: border-box;
     }
 
-    /* 計算機カード部分 */
+    .container {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* タブメニュー */
+    .tab-menu {
+      display: flex;
+      background: #e9ecef;
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: #6c757d;
+    }
+    .tab-btn.active {
+      background: var(--card-bg);
+      color: var(--primary-color);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* カード部分 */
     .card {
       width: 100%;
-      max-width: 480px; /* PCでの広がりすぎを防止 */
       background: #fff;
       padding: 24px 20px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      height: fit-content;
       box-sizing: border-box;
+      margin-bottom: 20px;
     }
 
     h2 {
-      color: #ff5a5f;
+      color: var(--primary-color);
       margin-top: 0;
       margin-bottom: 20px;
       text-align: center;
@@ -50,20 +100,19 @@
       color: #333;
     }
 
-    /* 入力フォームとプルダウンを押しやすいサイズに */
-    input, select {
+    /* 通常のテキスト・数値入力、セレクトボックスのみデザイン適用 */
+    input[type="text"], input[type="number"], select {
       width: 100%;
-      padding: 12px 10px; /* スマホでタップしやすい高さ */
+      padding: 12px 10px;
       font-size: 1rem;
       box-sizing: border-box;
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-color);
       border-radius: 6px;
       background-color: #fff;
-      -webkit-appearance: none; /* スマホ標準のデザイン崩れを防止 */
+      -webkit-appearance: none;
       appearance: none;
     }
 
-    /* セレクトボックスの右矢印アイコン調整 */
     select {
       background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
       background-repeat: no-repeat;
@@ -77,7 +126,28 @@
       color: #333;
     }
 
-    /* 結果エリア */
+    .hint {
+      font-size: 0.8rem;
+      color: #6c757d;
+      margin-top: 4px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      font-weight: normal;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: auto;
+      margin-right: 8px;
+      transform: scale(1.2);
+      -webkit-appearance: checkbox;
+      appearance: checkbox;
+    }
+
+    /* 利益計算の結果エリア */
     .result-box {
       background: #fff8f0;
       padding: 16px;
@@ -103,115 +173,431 @@
       margin-top: 10px;
       margin-bottom: 0;
     }
+
+    /* 送料計算・検索の結果エリア */
+    .result-header {
+      font-weight: bold;
+      font-size: 1.05rem;
+      margin-bottom: 12px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 6px;
+    }
+    .result-card {
+      background: #fff;
+      border: 1px solid var(--border-color);
+      border-left: 6px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+      position: relative;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .result-card.genre-kuroneko { border-left-color: var(--color-kuroneko); }
+    .result-card.genre-yucho { border-left-color: var(--color-yucho); }
+    .result-card.genre-other { border-left-color: var(--color-other); }
+    .result-card.genre-teikei { border-left-color: var(--color-teikei); }
+
+    .result-card.best {
+      background: #fff8f8;
+    }
+    .best-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--primary-color);
+      color: white;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .genre-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: white;
+      margin-bottom: 6px;
+    }
+    .genre-kuroneko .genre-tag { background-color: var(--color-kuroneko); }
+    .genre-yucho .genre-tag { background-color: var(--color-yucho); }
+    .genre-other .genre-tag { background-color: var(--color-other); }
+    .genre-teikei .genre-tag { background-color: var(--color-teikei); }
+
+    .method-name {
+      font-weight: bold;
+      font-size: 1.05rem;
+      color: #2c3e50;
+      margin-bottom: 2px;
+    }
+    .method-price {
+      font-size: 1.15rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin-bottom: 4px;
+    }
+    .price-note {
+      font-size: 0.85rem;
+      color: #d32f2f;
+      margin-top: 2px;
+    }
+    .method-detail {
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+    .no-result {
+      text-align: center;
+      color: #6c757d;
+      padding: 20px;
+    }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <h2>メルカリ利益計算機</h2>
-
-  <div class="form-group">
-    <label for="price">販売額（円）</label>
-    <input type="number" id="price" placeholder="例: 666" oninput="calculate()">
+<div class="container">
+  <!-- タブメニュー -->
+  <div class="tab-menu">
+    <button class="tab-btn active" onclick="switchTab('profit-tab')">メルカリ利益計算</button>
+    <button class="tab-btn" onclick="switchTab('shipping-tab')">送料計算・検索</button>
   </div>
 
-  <div class="form-group">
-    <label for="shipping">発送方法</label>
-    <select id="shipping" onchange="calculate()">
-      <optgroup label="--- らくらくメルカリ便">
-        <option value="210" selected>ネコポス (210円)</option>
-        <option value="450">宅急便コンパクト (450円)</option>
-        <option value="750">宅急便 60サイズ (750円)</option>
-        <option value="850">宅急便 80サイズ (850円)</option>
-        <option value="1050">宅急便 100サイズ (1,050円)</option>
-        <option value="1200">宅急便 120サイズ (1,200円)</option>
-        <option value="1450">宅急便 140サイズ (1,450円)</option>
-        <option value="1700">宅急便 160サイズ (1,700円)</option>
-        <option value="2100">宅急便 170サイズ (2,100円)</option>
-        <option value="2100">宅急便 180サイズ (2,100円)</option>
-        <option value="2500">宅急便 200サイズ (2,500円)</option>
-      </optgroup>
+  <!-- タブ1：元のメルカリ利益計算機[cite: 2] -->
+  <div id="profit-tab" class="tab-content active">
+    <div class="card">
+      <h2>メルカリ利益計算機</h2>
 
-      <optgroup label="--- ゆうゆうメルカリ便">
-        <option value="160">ゆうパケットポストmini (160円)</option>
-        <option value="215">ゆうパケットポスト (215円)</option>
-        <option value="230">ゆうパケット (230円)</option>
-        <option value="455">ゆうパケットプラス (455円)</option>
-        <option value="750">ゆうパック 60サイズ (750円)</option>
-        <option value="870">ゆうパック 80サイズ (870円)</option>
-        <option value="1070">ゆうパック 100サイズ (1,070円)</option>
-        <option value="1200">ゆうパック 120サイズ (1,200円)</option>
-        <option value="1450">ゆうパック 140サイズ (1,450円)</option>
-        <option value="1700">ゆうパック 160サイズ (1,700円)</option>
-        <option value="1900">ゆうパック 170サイズ (1,900円)</option>
-      </optgroup>
+      <div class="form-group">
+        <label for="price">販売額（円）</label>
+        <input type="number" id="price" placeholder="例: 666" oninput="calculateProfit()">
+      </div>
 
-      <optgroup label="--- 郵便レターパック等">
-        <option value="85">ミニレター (85円)</option>
-        <option value="430">レターパックライト (430円)</option>
-        <option value="600">レターパックプラス (600円)</option>
-        <option value="190">ゆうメール 150g (190円)</option>
-        <option value="230">ゆうメール 250g (230円)</option>
-        <option value="320">ゆうメール 500g (320円)</option>
-        <option value="380">ゆうメール 1kg (380円)</option>
-        <option value="210">スマートレター (210円)</option>
-        <option value="185">クリックポスト (185円)</option>
-      </optgroup>
+      <div class="form-group">
+        <label for="shipping">発送方法</label>
+        <select id="shipping" onchange="calculateProfit()">
+          <optgroup label="--- らくらくメルカリ便">
+            <option value="210" selected>ネコポス (210円)</option>
+            <option value="450">宅急便コンパクト (450円)</option>
+            <option value="750">宅急便 60サイズ (750円)</option>
+            <option value="850">宅急便 80サイズ (850円)</option>
+            <option value="1050">宅急便 100サイズ (1,050円)</option>
+            <option value="1200">宅急便 120サイズ (1,200円)</option>
+            <option value="1450">宅急便 140サイズ (1,450円)</option>
+            <option value="1700">宅急便 160サイズ (1,700円)</option>
+            <option value="2100">宅急便 170サイズ (2,100円)</option>
+            <option value="2100">宅急便 180サイズ (2,100円)</option>
+            <option value="2500">宅急便 200サイズ (2,500円)</option>
+          </optgroup>
 
-      <optgroup label="--- 規格内郵便">
-        <option value="140">規格内 50g以内 (140円)</option>
-        <option value="180">規格内 100g以内 (180円)</option>
-        <option value="270">規格内 150g以内 (270円)</option>
-        <option value="320">規格内 250g以内 (320円)</option>
-        <option value="510">規格内 500g以内 (510円)</option>
-        <option value="750">規格内 1kg以内 (750円)</option>
-      </optgroup>
+          <optgroup label="--- ゆうゆうメルカリ便">
+            <option value="160">ゆうパケットポストmini (160円)</option>
+            <option value="215">ゆうパケットポスト (215円)</option>
+            <option value="230">ゆうパケット (230円)</option>
+            <option value="455">ゆうパケットプラス (455円)</option>
+            <option value="750">ゆうパック 60サイズ (750円)</option>
+            <option value="870">ゆうパック 80サイズ (870円)</option>
+            <option value="1070">ゆうパック 100サイズ (1,070円)</option>
+            <option value="1200">ゆうパック 120サイズ (1,200円)</option>
+            <option value="1450">ゆうパック 140サイズ (1,450円)</option>
+            <option value="1700">ゆうパック 160サイズ (1,700円)</option>
+            <option value="1900">ゆうパック 170サイズ (1,900円)</option>
+          </optgroup>
 
-      <optgroup label="--- 規格外郵便">
-        <option value="260">規格外 50g以内 (260円)</option>
-        <option value="290">規格外 100g以内 (290円)</option>
-        <option value="390">規格外 150g以内 (390円)</option>
-        <option value="450">規格外 250g以内 (450円)</option>
-        <option value="660">規格外 500g以内 (660円)</option>
-        <option value="920">規格外 1kg以内 (920円)</option>
-        <option value="1350">規格外 2kg以内 (1,350円)</option>
-        <option value="1750">規格外 4kg以内 (1,750円)</option>
-      </optgroup>
-    </select>
+          <optgroup label="--- 郵便レターパック等">
+            <option value="85">ミニレター (85円)</option>
+            <option value="430">レターパックライト (430円)</option>
+            <option value="600">レターパックプラス (600円)</option>
+            <option value="190">ゆうメール 150g (190円)</option>
+            <option value="230">ゆうメール 250g (230円)</option>
+            <option value="320">ゆうメール 500g (320円)</option>
+            <option value="380">ゆうメール 1kg (380円)</option>
+            <option value="210">スマートレター (210円)</option>
+            <option value="185">クリックポスト (185円)</option>
+          </optgroup>
+
+          <optgroup label="--- 規格内郵便">
+            <option value="140">規格内 50g以内 (140円)</option>
+            <option value="180">規格内 100g以内 (180円)</option>
+            <option value="270">規格内 150g以内 (270円)</option>
+            <option value="320">規格内 250g以内 (320円)</option>
+            <option value="510">規格内 500g以内 (510円)</option>
+            <option value="750">規格内 1kg以内 (750円)</option>
+          </optgroup>
+
+          <optgroup label="--- 規格外郵便">
+            <option value="260">規格外 50g以内 (260円)</option>
+            <option value="290">規格外 100g以内 (290円)</option>
+            <option value="390">規格外 150g以内 (390円)</option>
+            <option value="450">規格外 250g以内 (450円)</option>
+            <option value="660">規格外 500g以内 (660円)</option>
+            <option value="920">規格外 1kg以内 (920円)</option>
+            <option value="1350">規格外 2kg以内 (1,350円)</option>
+            <option value="1750">規格外 4kg以内 (1,750円)</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="extra">雑費（梱包材など）</label>
+        <input type="number" id="extra" placeholder="例: 10" oninput="calculateProfit()">
+      </div>
+
+      <div class="result-box">
+        <div class="result-item"><span>販売利益:</span> <span id="profit">0 円</span></div>
+        <div class="result-item"><span>送料:</span> <span id="shippingFee">210 円</span></div>
+        <div class="result-item total"><span>手取り額:</span> <span id="netProfit">0 円</span></div>
+      </div>
+    </div>
   </div>
 
-  <div class="form-group">
-    <label for="extra">雑費（梱包材など）</label>
-    <input type="number" id="extra" placeholder="例: 10" oninput="calculate()">
-  </div>
+  <!-- タブ2：送料計算・検索（自動判定 & 逆引き） -->
+  <div id="shipping-tab" class="tab-content">
+    <div class="card" style="margin-bottom: 16px;">
+      <h2>送料計算・検索</h2>
 
-  <div class="result-box">
-    <div class="result-item"><span>販売利益:</span> <span id="profit">0 円</span></div>
-    <div class="result-item"><span>送料:</span> <span id="shippingFee">210 円</span></div>
-    <div class="result-item total"><span>手取り額:</span> <span id="netProfit">0 円</span></div>
+      <div class="tab-menu" style="margin-bottom: 16px;">
+        <button class="tab-btn active" onclick="switchSubTab('auto', event)">自動判定モード</button>
+        <button class="tab-btn" onclick="switchSubTab('reverse', event)">逆引き・資材別</button>
+      </div>
+
+      <!-- 自動判定サブビュー -->
+      <div id="sub-auto" class="sub-tab-content">
+        <div class="form-group">
+          <label for="thickness">厚み (cm)</label>
+          <input type="number" id="thickness" step="0.5" placeholder="例: 2.5" oninput="calculateShipping()">
+          <div class="hint">※ネコポスやゆうパケットは「3cm以内」が重要です</div>
+        </div>
+        <div class="form-group">
+          <label for="sizeSum">3辺の合計 (cm)</label>
+          <select id="sizeSum" onchange="calculateShipping()">
+            <option value="0">制限なし / 特になし</option>
+            <option value="60">60サイズ以内</option>
+            <option value="80">80サイズ以内</option>
+            <option value="100">100サイズ以内</option>
+            <option value="120">120サイズ以内</option>
+            <option value="140">140サイズ以内</option>
+            <option value="160">160サイズ以内</option>
+            <option value="170">170サイズ以内</option>
+            <option value="180">180サイズ以内</option>
+            <option value="200">200サイズ以内</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="weight">重さ (g)</label>
+          <input type="number" id="weight" placeholder="例: 350" oninput="calculateShipping()">
+        </div>
+        <div class="form-group" style="margin-top: 10px; margin-bottom: 0;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="isA4" onchange="calculateShipping()"> A4サイズ以内に収まる（長辺34cm×短辺23cm以内など）
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="isAnonymous" onchange="calculateShipping()"> 匿名配送のみ（らくらく・ゆうゆうメルカリ便）
+          </label>
+        </div>
+      </div>
+
+      <!-- 逆引きサブビュー -->
+      <div id="sub-reverse" class="sub-tab-content" style="display: none;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="boxType">使いたい専用資材・発送タイプ</label>
+          <select id="boxType" onchange="filterReverse()">
+            <option value="all">すべて表示</option>
+            <option value="thin_a4">ネコポス・クリックポスト・ゆうパケット（薄型A4）</option>
+            <option value="compact">宅急便コンパクト専用BOX</option>
+            <option value="post_mini">ゆうパケットポストmini専用封筒</option>
+            <option value="post_box">ゆうパケットポスト専用箱・シール</option>
+            <option value="plus">ゆうパケットプラス専用箱</option>
+            <option value="box_size">宅急便・ゆうパック（60サイズ以上の段ボール等）</option>
+            <option value="letterpack">レターパック / ミニレター</option>
+            <option value="teikei">定形郵便・定形外郵便</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-header" id="resultCount">おすすめの発送方法（安い順）</div>
+    <div id="resultList">
+      <div class="no-result">サイズや重さを入力してください</div>
+    </div>
   </div>
 </div>
 
 <script>
-function calculate() {
-  const price = Math.floor(Number(document.getElementById('price').value)) || 0;
-  const shippingFee = Number(document.getElementById('shipping').value) || 0;
-  const extra = Math.floor(Number(document.getElementById('extra').value)) || 0;
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-menu:first-of-type .tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
 
-  // メルカリ手数料10%（端数切り捨て）
-  const fee = Math.floor(price * 0.1);
-  const profit = price - fee;
+        if (tabId === 'shipping-tab') {
+            calculateShipping();
+        }
+    }
 
-  // 手取り額計算
-  const netProfit = profit - shippingFee - extra;
+    function switchSubTab(subType, evt) {
+        document.querySelectorAll('.sub-tab-content').forEach(el => el.style.display = 'none');
+        const parentMenu = evt.currentTarget.parentElement;
+        parentMenu.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
 
-  document.getElementById('profit').textContent = profit.toLocaleString() + ' 円';
-  document.getElementById('shippingFee').textContent = shippingFee.toLocaleString() + ' 円';
-  document.getElementById('netProfit').textContent = (price > 0 ? netProfit.toLocaleString() : 0) + ' 円';
-}
+        if (subType === 'auto') {
+            document.getElementById('sub-auto').style.display = 'block';
+            document.getElementById('resultCount').style.display = 'block';
+            calculateShipping();
+        } else {
+            document.getElementById('sub-reverse').style.display = 'block';
+            document.getElementById('resultCount').style.display = 'none';
+            filterReverse();
+        }
+        evt.currentTarget.classList.add('active');
+    }
 
-// 初回表示時の計算
-calculate();
+    function calculateProfit() {
+      const price = Math.floor(Number(document.getElementById('price').value)) || 0;
+      const shippingFee = Number(document.getElementById('shipping').value) || 0;
+      const extra = Math.floor(Number(document.getElementById('extra').value)) || 0;
+
+      const fee = Math.floor(price * 0.1);
+      const profit = price - fee;
+      const netProfit = profit - shippingFee - extra;
+
+      document.getElementById('profit').textContent = profit.toLocaleString() + ' 円';
+      document.getElementById('shippingFee').textContent = shippingFee.toLocaleString() + ' 円';
+      document.getElementById('netProfit').textContent = (price > 0 ? netProfit.toLocaleString() : 0) + ' 円';
+    }
+
+    const shippingMethods = [
+        { name: "ネコポス", genreName: "らくらくメルカリ便", genreClass: "genre-kuroneko", fee: 210, boxFeeText: "", note: "", maxThick: 3, maxWeight: 1000, a4: true, desc: "A4以内 / 厚み3cm以内 / 1kg" },
+        { name: "宅急便コンパクト", genreName: "らくらくメルカリ便", genreClass: "genre-kuroneko", fee: 450, boxFeeText: " ＋ 専用BOX ¥70", note: "", maxThick: 5, maxWeight: 9999, special: "compact", desc: "専用BOX使用 (薄型は外時厚さ5cmまで)" },
+        { name: "宅急便 (60サイズ)", genreName: "らくらくメルカリ便", genreClass: "genre-kuroneko", fee: 750, boxFeeText: "", note: "", maxSize: 60, maxWeight: 2000, special: "box_size", desc: "3辺合計60cm以内 / 2kg" },
+        { name: "宅急便 (80サイズ)", genreName: "らくらくメルカリ便", genreClass: "genre-kuroneko", fee: 850, boxFeeText: "", note: "", maxSize: 80, maxWeight: 5000, special: "box_size", desc: "3辺合計80cm以内 / 5kg" },
+        { name: "宅急便 (100サイズ)", genreName: "らくらくメルカリ便", genreClass: "genre-kuroneko", fee: 1050, boxFeeText: "", note: "", maxSize: 100, maxWeight: 10000, special: "box_size", desc: "3辺合計100cm以内 / 10kg" },
+        { name: "宅急便 (120サイズ)", genreName: "らくらくメルカリ便", genreClass: "genre-kuroneko", fee: 1200, boxFeeText: "", note: "", maxSize: 120, maxWeight: 15000, special: "box_size", desc: "3辺合計120cm以内 / 15kg" },
+        { name: "宅急便 (140サイズ)", genreName: "らくらくメルカリ便", genreClass: "genre-kuroneko", fee: 1450, boxFeeText: "", note: "", maxSize: 140, maxWeight: 20000, special: "box_size", desc: "3辺合計140cm以内 / 20kg" },
+        { name: "宅急便 (160サイズ)", genreName: "らくらくメルカリ便", genreClass: "genre-kuroneko", fee: 1700, boxFeeText: "", note: "", maxSize: 160, maxWeight: 25000, special: "box_size", desc: "3辺合計160cm以内 / 25kg" },
+        { name: "宅急便 (170サイズ)", genreName: "らくらくメルカリ便", genreClass: "genre-kuroneko", fee: 2100, boxFeeText: "", note: "", maxSize: 170, maxWeight: 30000, special: "box_size", desc: "営業所・集荷のみ / 30kg" },
+        { name: "宅急便 (180サイズ)", genreName: "らくらくメルカリ便", genreClass: "genre-kuroneko", fee: 2100, boxFeeText: "", note: "", maxSize: 180, maxWeight: 30000, special: "box_size", desc: "営業所・集荷のみ / 30kg" },
+        { name: "宅急便 (200サイズ)", genreName: "らくらくメルカリ便", genreClass: "genre-kuroneko", fee: 2500, boxFeeText: "", note: "", maxSize: 200, maxWeight: 30000, special: "box_size", desc: "営業所・集荷のみ / 30kg" },
+
+        { name: "ゆうパケットポストmini", genreName: "ゆうゆうメルカリ便", genreClass: "genre-yucho", fee: 160, boxFeeText: " ＋ 専用封筒 ¥20", note: "※専用シール・封筒は20枚セット¥100より算出しています", maxThick: 3, maxWeight: 2000, special: "post_mini", desc: "専用封筒 / 2kg" },
+        { name: "ゆうパケットポスト", genreName: "ゆうゆうメルカリ便", genreClass: "genre-yucho", fee: 215, boxFeeText: " ＋ 専用シール¥5 または 専用箱¥65", note: "※専用シールは20枚セット¥100より算出しています", maxThick: 3, maxWeight: 2000, a4: true, special: "post_box", desc: "専用箱・シール / 長辺34cm以内 / 2kg" },
+        { name: "ゆうパケット", genreName: "ゆうゆうメルカリ便", genreClass: "genre-yucho", fee: 230, boxFeeText: "", note: "", maxThick: 3, maxWeight: 1000, a4: true, special: "thin_a4", desc: "34cm×23cm×3cm以内 / 1kg" },
+        { name: "ゆうパケットプラス", genreName: "ゆうゆうメルカリ便", genreClass: "genre-yucho", fee: 455, boxFeeText: " ＋ 専用箱 ¥65", note: "", maxThick: 7, maxWeight: 2000, special: "plus", desc: "専用箱 (17×24×7cm) / 2kg" },
+        { name: "ゆうパック (60サイズ)", genreName: "ゆうゆうメルカリ便", genreClass: "genre-yucho", fee: 750, boxFeeText: "", note: "", maxSize: 60, maxWeight: 25000, special: "box_size", desc: "3辺合計60cm以内 / 25kg" },
+        { name: "ゆうパック (80サイズ)", genreName: "ゆうゆうメルカリ便", genreClass: "genre-yucho", fee: 870, boxFeeText: "", note: "", maxSize: 80, maxWeight: 25000, special: "box_size", desc: "3辺合計80cm以内 / 25kg" },
+        { name: "ゆうパック (100サイズ)", genreName: "ゆうゆうメルカリ便", genreClass: "genre-yucho", fee: 1070, boxFeeText: "", note: "", maxSize: 100, maxWeight: 25000, special: "box_size", desc: "3辺合計100cm以内 / 25kg" },
+        { name: "ゆうパック (120サイズ)", genreName: "ゆうゆうメルカリ便", genreClass: "genre-yucho", fee: 1200, boxFeeText: "", note: "", maxSize: 120, maxWeight: 25000, special: "box_size", desc: "3辺合計120cm以内 / 25kg" },
+        { name: "ゆうパック (140サイズ)", genreName: "ゆうゆうメルカリ便", genreClass: "genre-yucho", fee: 1450, boxFeeText: "", note: "", maxSize: 140, maxWeight: 25000, special: "box_size", desc: "3辺合計140cm以内 / 25kg" },
+        { name: "ゆうパック (160サイズ)", genreName: "ゆうゆうメルカリ便", genreClass: "genre-yucho", fee: 1700, boxFeeText: "", note: "", maxSize: 160, maxWeight: 25000, special: "box_size", desc: "3辺合計160cm以内 / 25kg" },
+        { name: "ゆうパック (170サイズ)", genreName: "ゆうゆうメルカリ便", genreClass: "genre-yucho", fee: 1900, boxFeeText: "", note: "", maxSize: 170, maxWeight: 25000, special: "box_size", desc: "3辺合計170cm以内 / 25kg" },
+
+        { name: "ミニレター", genreName: "その他・郵便", genreClass: "genre-other", fee: 85, boxFeeText: "", note: "", maxThick: 1, maxWeight: 25, desc: "厚み1cm / 25g以内" },
+        { name: "レターパックライト", genreName: "その他・郵便", genreClass: "genre-other", fee: 430, boxFeeText: "", note: "", maxThick: 3, maxWeight: 4000, special: "letterpack", desc: "専用封筒 / 厚み3cm / 4kg" },
+        { name: "レターパックプラス", genreName: "その他・郵便", genreClass: "genre-other", fee: 600, boxFeeText: "", note: "", maxWeight: 4000, special: "letterpack", desc: "専用封筒 / 対面受取 / 4kg" },
+        { name: "クリックポスト", genreName: "その他・郵便", genreClass: "genre-other", fee: 185, boxFeeText: "", note: "", maxThick: 3, maxWeight: 1000, a4: true, special: "thin_a4", desc: "A4・厚み3cm以内 / 1kg" },
+        
+        { name: "定形郵便 (50g以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 140, boxFeeText: "", note: "", maxThick: 1, maxWeight: 50, desc: "長辺34×短辺25×厚み1cm / 50g以内" },
+        { name: "定形外 規格内 (50g以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 140, boxFeeText: "", note: "", maxThick: 3, maxWeight: 50, desc: "長辺34×短辺25×厚み3cm / 50g" },
+        { name: "定形外 規格内 (100g以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 180, boxFeeText: "", note: "", maxThick: 3, maxWeight: 100, desc: "長辺34×短辺25×厚み3cm / 100g" },
+        { name: "定形外 規格内 (150g以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 270, boxFeeText: "", note: "", maxThick: 3, maxWeight: 150, desc: "長辺34×短辺25×厚み3cm / 150g" },
+        { name: "定形外 規格内 (250g以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 320, boxFeeText: "", note: "", maxThick: 3, maxWeight: 250, desc: "長辺34×短辺25×厚み3cm / 250g" },
+        { name: "定形外 規格内 (500g以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 510, boxFeeText: "", note: "", maxThick: 3, maxWeight: 500, desc: "長辺34×短辺25×厚み3cm / 500g" },
+        { name: "定形外 規格内 (1kg以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 750, boxFeeText: "", note: "", maxThick: 3, maxWeight: 1000, desc: "長辺34×短辺25×厚み3cm / 1kg" },
+        { name: "定形外 規格外 (50g以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 260, boxFeeText: "", note: "", maxWeight: 50, desc: "3辺合計90cm以内 / 50g" },
+        { name: "定形外 規格外 (100g以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 290, boxFeeText: "", note: "", maxWeight: 100, desc: "3辺合計90cm以内 / 100g" },
+        { name: "定形外 規格外 (150g以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 390, boxFeeText: "", note: "", maxWeight: 150, desc: "3辺合計90cm以内 / 150g" },
+        { name: "定形外 規格外 (250g以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 450, boxFeeText: "", note: "", maxWeight: 250, desc: "3辺合計90cm以内 / 250g" },
+        { name: "定形外 規格外 (500g以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 660, boxFeeText: "", note: "", maxWeight: 500, desc: "3辺合計90cm以内 / 500g" },
+        { name: "定形外 規格外 (1kg以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 920, boxFeeText: "", note: "", maxWeight: 1000, desc: "3辺合計90cm以内 / 1kg" },
+        { name: "定形外 規格外 (2kg以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 1350, boxFeeText: "", note: "", maxWeight: 2000, desc: "3辺合計90cm以内 / 2kg" },
+        { name: "定形外 規格外 (4kg以内)", genreName: "定形内・定形外郵便", genreClass: "genre-teikei", fee: 1750, boxFeeText: "", note: "", maxWeight: 4000, desc: "3辺合計90cm以内 / 4kg" }
+    ];
+
+    function calculateShipping() {
+        const thickness = parseFloat(document.getElementById('thickness').value) || 0;
+        const sizeSum = parseInt(document.getElementById('sizeSum').value) || 0;
+        const weight = parseFloat(document.getElementById('weight').value) || 0;
+        const isA4 = document.getElementById('isA4').checked;
+        const isAnonymous = document.getElementById('isAnonymous').checked;
+
+        const results = shippingMethods.filter(method => {
+            if (isAnonymous) {
+                if (method.genreClass !== 'genre-kuroneko' && method.genreClass !== 'genre-yucho') {
+                    return false;
+                }
+            }
+            if (method.maxThick && thickness > method.maxThick) return false;
+            if (method.maxWeight && weight > method.maxWeight) return false;
+            if (method.a4 && !isA4 && thickness <= 3 && weight <= 1000) {
+                if (method.name.includes("ネコポス") || method.name.includes("クリックポスト")) {
+                    if (!isA4) return false;
+                }
+            }
+            if (method.maxSize && sizeSum > 0 && sizeSum > method.maxSize) return false;
+            return true;
+        });
+
+        results.sort((a, b) => a.fee - b.fee);
+
+        const resultList = document.getElementById('resultList');
+        document.getElementById('resultCount').innerText = `おすすめの発送方法（該当：${results.length}件）`;
+
+        if (results.length === 0) {
+            resultList.innerHTML = `<div class="no-result">条件に合う発送方法が見つかりませんでした。入力値をご確認ください。</div>`;
+            return;
+        }
+
+        let html = '';
+        results.forEach((m, index) => {
+            const noteHtml = m.note ? `<div class="price-note">${m.note}</div>` : '';
+            html += `
+                <div class="result-card ${m.genreClass} ${index === 0 ? 'best' : ''}">
+                    ${index === 0 ? '<div class="best-badge">最安おすすめ</div>' : ''}
+                    <div class="genre-tag">${m.genreName}</div>
+                    <div class="method-name">${m.name}</div>
+                    <div class="method-price">送料 ¥${m.fee.toLocaleString()}${m.boxFeeText}</div>
+                    ${noteHtml}
+                    <div class="method-detail">${m.desc}</div>
+                </div>
+            `;
+        });
+        resultList.innerHTML = html;
+    }
+
+    function filterReverse() {
+        const type = document.getElementById('boxType').value;
+        const resultList = document.getElementById('resultList');
+        
+        const filtered = shippingMethods.filter(m => {
+            if (type === 'all') return true;
+            if (type === 'thin_a4' && (m.name === 'ネコポス' || m.name === 'クリックポスト' || m.name === 'ゆうパケット')) return true;
+            if (type === 'compact' && m.special === 'compact') return true;
+            if (type === 'post_mini' && m.special === 'post_mini') return true;
+            if (type === 'post_box' && m.special === 'post_box') return true;
+            if (type === 'plus' && m.special === 'plus') return true;
+            if (type === 'box_size' && m.special === 'box_size') return true;
+            if (type === 'letterpack' && m.genreClass === 'genre-other' && m.special === 'letterpack') return true;
+            if (type === 'teikei' && m.genreClass === 'genre-teikei') return true;
+            return false;
+        });
+
+        let html = '';
+        filtered.forEach(m => {
+            const noteHtml = m.note ? `<div class="price-note">${m.note}</div>` : '';
+            html += `
+                <div class="result-card ${m.genreClass}">
+                    <div class="genre-tag">${m.genreName}</div>
+                    <div class="method-name">${m.name}</div>
+                    <div class="method-price">送料 ¥${m.fee.toLocaleString()}${m.boxFeeText}</div>
+                    ${noteHtml}
+                    <div class="method-detail">${m.desc}</div>
+                </div>
+            `;
+        });
+        resultList.innerHTML = html || `<div class="no-result">該当する発送方法はありません</div>`;
+    }
+
+    calculateProfit();
 </script>
 
 </body>
